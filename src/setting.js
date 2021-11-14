@@ -80,7 +80,7 @@ let defaults = {
     'komoku',
     'san-san',
     'tengen',
-    
+
     'atari',
     'boshi',
     'geta',
