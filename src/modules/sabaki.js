@@ -900,8 +900,10 @@ class Sabaki extends EventEmitter {
 
         let coord = board.stringifyVertex(vertex)
         let contents = this.window.webContents
+        // https://www.electronjs.org/docs/latest/api/web-contents
         contents.insertText(coord)
 
+        // maybe of interest: https://www.electronjs.org/docs/latest/api/clipboard
         return
       }
 
