@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file.
 
+**Added**
+
+- Minimal language support via settings
+  ([#832](https://github.com/SabakiHQ/Sabaki/issues/832))
+- Engine player is clickable and its layout is available via CSS
+- Shortcuts are available via settings
+- Fix coordinates insertion in comments
+
 ## [Sabaki v0.52.1][v0.52.1]
 
 **Fixed**
