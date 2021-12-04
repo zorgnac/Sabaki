@@ -50,11 +50,9 @@ function newWindow(path) {
   }
 
   if (setting.get('comments.words')) {
-    setting.get('comments.words').map(
-      (word) => {
-        window.webContents.session.addWordToSpellCheckerDictionary(word)
-      }
-    )
+    setting.get('comments.words').map(word => {
+      window.webContents.session.addWordToSpellCheckerDictionary(word)
+    })
   }
 
   if (setting.get('window.maximized') === true) {
