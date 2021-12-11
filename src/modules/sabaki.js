@@ -265,7 +265,8 @@ class Sabaki extends EventEmitter {
       this.waitForRender().then(() => {
         let textarea = document.querySelector('#properties .edit textarea')
 
-        textarea.selectionStart = textarea.selectionEnd = 0
+        textarea.selectionStart = textarea.selectionEnd = textarea.value.length
+        // 0
         textarea.focus()
       })
     }
@@ -1372,6 +1373,9 @@ class Sabaki extends EventEmitter {
     this.setCurrentTreePosition(newTree, node.id)
 
     this.events.emit('toolUse', {tool, vertex, argument})
+
+    let textarea = document.querySelector('#properties .edit textarea')
+    textarea.focus()
   }
 
   // Navigation
