@@ -433,11 +433,13 @@ exports.get = function(props = {}) {
         },
         {type: 'separator'},
         {
+          shortcut: 'next-game',
           label: i18n.t('menu.navigation', 'Go to Ne&xt Game'),
           accelerator: 'CmdOrCtrl+PageDown',
           click: () => sabaki.goToSiblingGame(1)
         },
         {
+          shortcut: 'previous-game',
           label: i18n.t('menu.navigation', 'Go to Previou&s Game'),
           accelerator: 'CmdOrCtrl+PageUp',
           click: () => sabaki.goToSiblingGame(-1)
