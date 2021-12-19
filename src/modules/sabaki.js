@@ -913,7 +913,15 @@ class Sabaki extends EventEmitter {
       if (button === 2) {
         // Right mouse click
 
-        if (['stone_1', 'stone_-1'].includes(tool)) {
+        if (
+          board.markers[vy][vx] != null &&
+          board.markers[vy][vx].type === 'point'
+        ) {
+          // Show annotation context menu
+          this.openCommentMenu(treePosition, {x, y})
+
+          return
+        } else if (['stone_1', 'stone_-1'].includes(tool)) {
           // Switch stone tool
 
           tool = tool === 'stone_1' ? 'stone_-1' : 'stone_1'
@@ -936,6 +944,9 @@ class Sabaki extends EventEmitter {
             y
           )
 
+          return
+        } else {
+          // Other tools: do nothing
           return
         }
       }
