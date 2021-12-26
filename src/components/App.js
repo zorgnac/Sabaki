@@ -300,11 +300,12 @@ class App extends Component {
 
     let inferredState = sabaki.inferredState
     let tree = inferredState.gameTree
-    let scoreBoard, areaMap, influenceMap
+    let scoreBoard, areaMap
 
     if (state.showInfluence && state.analysis && state.analysis.ownership) {
+      let influenceMap = state.analysis.ownership
       state.deadStones = []
-      influenceMap = state.analysis.ownership
+      areaMap = influenceMap
       scoreBoard = gametree.getBoard(tree, state.treePosition)
       for (let y = 0; y < scoreBoard.height; y++)
         for (let x = 0; x < scoreBoard.width; x++) {
@@ -319,7 +320,6 @@ class App extends Component {
       // Calculate area map
 
       scoreBoard = gametree.getBoard(tree, state.treePosition).clone()
-
       for (let vertex of state.deadStones) {
         let sign = scoreBoard.get(vertex)
         if (sign === 0) continue
@@ -332,8 +332,6 @@ class App extends Component {
         state.mode === 'estimator'
           ? influence.map(scoreBoard.signMap, {discrete: true})
           : influence.areaMap(scoreBoard.signMap)
-    } else if (influenceMap) {
-      areaMap = influenceMap
     }
 
     state = {...state, ...inferredState, scoreBoard, areaMap}
@@ -365,7 +363,8 @@ class App extends Component {
         showGameGraph: state.showGameGraph,
         showCommentBox: state.showCommentBox,
         showLeftSidebar: state.showLeftSidebar,
-        engineGameOngoing: state.engineGameOngoing
+        engineGameOngoing: state.engineGameOngoing,
+        analysisEngineStatus: inferredState.analysisEngineStatus
       }),
 
       h(TripleSplitContainer, {
