@@ -26,6 +26,7 @@ exports.get = function(props = {}) {
     disableGameLoading,
     analysisType,
     showAnalysis,
+    showInfluence,
     showCoordinates,
     coordinatesType,
     showMoveNumbers,
@@ -669,6 +670,12 @@ exports.get = function(props = {}) {
               }
             }
           ]
+        },
+        {
+          label: i18n.t('menu.view', 'Show &Influence Map'),
+          type: 'checkbox',
+          checked: !!showInfluence,
+          click: () => toggleSetting('board.show_influence')
         },
         {type: 'separator'},
         {
