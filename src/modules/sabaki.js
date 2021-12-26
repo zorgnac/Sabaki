@@ -128,6 +128,7 @@ class Sabaki extends EventEmitter {
     })
 
     this.updateSettingState()
+    this.attachEngines(setting.get('engines.list'), 'autoload')
   }
 
   setState(change, callback = null) {
@@ -1673,8 +1674,10 @@ class Sabaki extends EventEmitter {
     })
   }
 
-  attachEngines(engines) {
+  attachEngines(engines, autoload = false) {
     let attaching = []
+    if (autoload)
+      engines = engines.filter(({boot}) => boot.includes('autoload'))
     let getEngineName = name => {
       let counter = 1
       let getName = () => (counter === 1 ? name : `${name} ${counter}`)
@@ -1795,6 +1798,17 @@ class Sabaki extends EventEmitter {
           message: 'Engine Stopped',
           engine: engine.name
         })
+      })
+
+      syncer.on('commands', () => {
+        let role = engine.boot.filter(x =>
+          x.match(/^(analyze|black|white)$/) ? x : null
+        )[0]
+        if (role == 'analyze') {
+          this.startAnalysis(syncer.id)
+        } else if (role == 'white' || role == 'black') {
+          this.toggleEnginePlayer(syncer.id, role)
+        }
       })
 
       syncer.controller.start()
