@@ -61,6 +61,7 @@ class Sabaki extends EventEmitter {
       analysisType: null,
       coordinatesType: null,
       showAnalysis: null,
+      showInfluence: null,
       showCoordinates: null,
       showMoveColorization: null,
       showMoveNumbers: null,
@@ -127,6 +128,7 @@ class Sabaki extends EventEmitter {
     })
 
     this.updateSettingState()
+    this.attachEngines(setting.get('engines.list'), 'autoload')
   }
 
   setState(change, callback = null) {
@@ -193,6 +195,19 @@ class Sabaki extends EventEmitter {
           syncer => syncer.id === state.analyzingEngineSyncerId
         )
       },
+      get analysisEngineStatus() {
+        let syncer
+        let commands = setting.get('engines.analyze_commands')
+
+        syncer = state.attachedEngineSyncers.find(syncer =>
+          syncer.id === state.analyzingEngineSyncerId ? syncer : null
+        )
+        if (syncer) return syncer.busy ? 'busy' : 'waiting'
+        syncer = state.attachedEngineSyncers.find(syncer =>
+          commands.find(x => syncer.commands.includes(x))
+        )
+        if (syncer) return 'available'
+      },
       get winrateData() {
         return [
           ...this.gameTree.listCurrentNodes(state.gameCurrents[state.gameIndex])
@@ -210,6 +225,7 @@ class Sabaki extends EventEmitter {
       'app.zoom_factor': 'zoomFactor',
       'board.analysis_type': 'analysisType',
       'board.show_analysis': 'showAnalysis',
+      'board.show_influence': 'showInfluence',
       'view.show_menubar': 'showMenuBar',
       'view.show_coordinates': 'showCoordinates',
       'view.show_move_colorization': 'showMoveColorization',
@@ -1667,8 +1683,10 @@ class Sabaki extends EventEmitter {
     })
   }
 
-  attachEngines(engines) {
+  attachEngines(engines, autoload = false) {
     let attaching = []
+    if (autoload)
+      engines = engines.filter(({boot}) => boot.includes('autoload'))
     let getEngineName = name => {
       let counter = 1
       let getName = () => (counter === 1 ? name : `${name} ${counter}`)
@@ -1701,6 +1719,7 @@ class Sabaki extends EventEmitter {
           if (syncer.analysis != null && syncer.treePosition != null) {
             let tree = this.state.gameTrees[this.state.gameIndex]
             let {sign, winrate} = syncer.analysis
+            let maxprobes = setting.get('board.analysis_probes')
             if (sign < 0) winrate = 100 - winrate
 
             let newTree = tree.mutate(draft => {
@@ -1708,6 +1727,16 @@ class Sabaki extends EventEmitter {
                 (Math.round(winrate * 100) / 100).toString()
               ])
             })
+
+            if (maxprobes && maxprobes > 0) {
+              if (
+                (syncer.analysis.probes &&
+                  maxprobes == syncer.analysis.probes) ||
+                (syncer.analysis.syncing && maxprobes < syncer.analysis.probes)
+              ) {
+                syncer.sendAbort()
+              }
+            }
 
             this.setCurrentTreePosition(newTree, this.state.treePosition)
           }
@@ -1778,6 +1807,17 @@ class Sabaki extends EventEmitter {
           message: 'Engine Stopped',
           engine: engine.name
         })
+      })
+
+      syncer.on('commands', () => {
+        let role = engine.boot.filter(x =>
+          x.match(/^(analyze|black|white)$/) ? x : null
+        )[0]
+        if (role == 'analyze') {
+          this.startAnalysis(syncer.id)
+        } else if (role == 'white' || role == 'black') {
+          this.toggleEnginePlayer(syncer.id, role)
+        }
       })
 
       syncer.controller.start()
@@ -2061,11 +2101,14 @@ class Sabaki extends EventEmitter {
     if (commandName == null) return
 
     let interval = setting.get('board.analysis_interval').toString()
+    let args = [color, interval]
+
+    if (commandName == 'kata-analyze') args = [...args, 'ownership', 'true']
 
     try {
       syncer.queueCommand({
         name: commandName,
-        args: [color, interval]
+        args: args
       })
     } catch (err) {}
   }
@@ -2100,6 +2143,28 @@ class Sabaki extends EventEmitter {
       (this.state.blackEngineSyncerId !== syncerId &&
         this.state.whiteEngineSyncerId !== syncerId)
     ) {
+      this.analyzeMove(this.state.treePosition)
+    }
+  }
+
+  async togglePauseAnalysis(syncerId) {
+    if (this.state.analyzingEngineSyncerId !== syncerId) {
+      await this.startAnalysis(syncerId)
+      return
+    }
+    if (
+      this.state.engineGameOngoing &&
+      this.state.blackEngineSyncerId === syncerId &&
+      this.state.whiteEngineSyncerId === syncerId
+    )
+      return
+
+    let syncer = this.inferredState.analyzingEngineSyncer
+    if (!syncer) return
+
+    if (syncer.busy) {
+      syncer.sendAbort()
+    } else {
       this.analyzeMove(this.state.treePosition)
     }
   }
@@ -2803,6 +2868,15 @@ class Sabaki extends EventEmitter {
     )
   }
 
+  toggleEngineShowHide(syncerId) {
+    let syncer = this.state.attachedEngineSyncers.find(
+      syncer => syncer.id === syncerId
+    )
+    if (syncer == null) return
+    this.setState(state => ({
+      showAnalysis: !state.showAnalysis
+    }))
+  }
   toggleEnginePlayer(syncerId, player) {
     let syncer = this.state.attachedEngineSyncers.find(
       syncer => syncer.id === syncerId

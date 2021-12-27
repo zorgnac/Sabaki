@@ -43,6 +43,11 @@ class EnginePeerListItem extends Component {
       let {syncer, onPlayerClick = () => {}} = this.props
       onPlayerClick({syncer}, 'white')
     }
+
+    this.handleAnalyzerButtonClick = evt => {
+      let {syncer, onAnalyzerClick = () => {}} = this.props
+      onAnalyzerClick({syncer})
+    }
   }
 
   componentDidMount() {
@@ -95,8 +100,10 @@ class EnginePeerListItem extends Component {
           'div',
           {
             key: 'analyzing',
-            class: 'icon analyzing',
-            title: t('Analyzer')
+            class:
+              'icon analyzing' + (sabaki.state.showAnalysis ? '' : ' inactive'),
+            title: t('Analyzer'),
+            onClick: this.handleAnalyzerButtonClick
           },
           h('img', {
             src: './node_modules/@primer/octicons/build/svg/pulse.svg',
@@ -108,7 +115,7 @@ class EnginePeerListItem extends Component {
         'div',
         {
           key: 'player_1',
-          class: 'icon player ' + (blackPlayer ? '' : 'inactive'),
+          class: 'icon player' + (blackPlayer ? '' : ' inactive'),
           title: t('Plays as Black'),
           onClick: this.handleBlackPlayerButtonClick
         },
@@ -123,7 +130,7 @@ class EnginePeerListItem extends Component {
         'div',
         {
           key: 'player_-1',
-          class: 'icon player ' + (whitePlayer ? '' : 'inactive'),
+          class: 'icon player' + (whitePlayer ? '' : ' inactive'),
           title: t('Plays as White'),
           onClick: this.handleWhitePlayerButtonClick
         },
@@ -161,6 +168,13 @@ export class EnginePeerList extends Component {
       onEngineSelect({syncer})
 
       sabaki.toggleEnginePlayer(syncer.id, player)
+    }
+
+    this.handleEngineAnalyzerClick = ({syncer}) => {
+      let {onEngineSelect = () => {}} = this.props
+      onEngineSelect({syncer})
+
+      sabaki.toggleEngineShowHide(syncer.id)
     }
 
     this.handleAttachEngineButtonClick = evt => {
@@ -224,7 +238,8 @@ export class EnginePeerList extends Component {
 
             onClick: this.handleEngineClick,
             onContextMenu: this.handleEngineContextMenu,
-            onPlayerClick: this.handleEnginePlayerClick
+            onPlayerClick: this.handleEnginePlayerClick,
+            onAnalyzerClick: this.handleEngineAnalyzerClick
           })
         )
       )

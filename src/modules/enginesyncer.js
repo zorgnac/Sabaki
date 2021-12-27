@@ -29,8 +29,24 @@ function parseVertex(coord, size) {
   return [x, y]
 }
 
-function parseAnalysis(line, board) {
-  return line
+function parseAnalysis(line, board, sign) {
+  let matchOwner = line.match(/ownership\s+(.+)/) // [-0-9. ]
+  let ownership
+
+  if (matchOwner) {
+    let raw = matchOwner[1].split(/\s+/).map(x => sign * parseFloat(x))
+    line = line.slice(0, matchOwner.index)
+    if (raw.length == board.height * board.width)
+      ownership = Array(board.height)
+        .fill(0)
+        .map((_, y) =>
+          Array(board.width)
+            .fill(0)
+            .map((_, x) => raw[x + y * board.width])
+        )
+  }
+
+  let variations = line
     .split(/\s*info\s+/)
     .slice(1)
     .map(x => x.trim())
@@ -71,6 +87,11 @@ function parseAnalysis(line, board) {
       scoreLead: scoreLead != null ? +scoreLead : null,
       moves: pv.map(x => board.parseVertex(x))
     }))
+
+  return {
+    variations: variations,
+    ownership: ownership
+  }
 }
 
 export default class EngineSyncer extends EventEmitter {
@@ -87,6 +108,8 @@ export default class EngineSyncer extends EventEmitter {
     this.engine = engine
     this.commands = []
     this.treePosition = null
+    this.probes = [] // [treePosition] keep number of probes at position...
+    this.syncing = false // ... but do not count probes while syncing
 
     let absolutePath = resolve(path)
     let executePath = existsSync(absolutePath) ? absolutePath : path
@@ -106,6 +129,7 @@ export default class EngineSyncer extends EventEmitter {
         this.controller.sendCommand({name: 'protocol_version'}),
         this.controller.sendCommand({name: 'list_commands'}).then(response => {
           this.commands = response.content.split('\n')
+          this.emit('commands')
         }),
         ...(commands != null && commands.trim() !== ''
           ? commands
@@ -140,12 +164,22 @@ export default class EngineSyncer extends EventEmitter {
             // Parse analysis info
 
             if (line.startsWith('info ')) {
-              let variations = parseAnalysis(line, board)
+              let {variations, ownership} = parseAnalysis(line, board, sign)
+              let probes = this.probes[this.treePosition] || 0
+              let syncing = this.syncing
+              if (!syncing) probes++
+
+              this.syncing = false
+              this.probes[this.treePosition] = probes
 
               this.analysis = {
+                // emits 'analysis-update' via setter
                 sign,
                 variations,
-                winrate: Math.max(...variations.map(({winrate}) => winrate))
+                winrate: Math.max(...variations.map(({winrate}) => winrate)),
+                ownership: ownership,
+                probes: probes,
+                syncing: syncing
               }
             } else if (line.startsWith('play ')) {
               sign = -sign
@@ -406,7 +440,10 @@ export default class EngineSyncer extends EventEmitter {
       throw new Error(t('GTP engine can’t be synced to current state.'))
     }
 
-    this.treePosition = id
-    this.analysis = null
+    if (this.treePosition != id) {
+      this.treePosition = id
+      this.analysis = null
+      this.syncing = true
+    }
   }
 }

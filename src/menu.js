@@ -26,6 +26,7 @@ exports.get = function(props = {}) {
     disableGameLoading,
     analysisType,
     showAnalysis,
+    showInfluence,
     showCoordinates,
     coordinatesType,
     showMoveNumbers,
@@ -36,7 +37,8 @@ exports.get = function(props = {}) {
     showGameGraph,
     showCommentBox,
     showLeftSidebar,
-    engineGameOngoing
+    engineGameOngoing,
+    analysisEngineStatus
   } = props
 
   let data = [
@@ -463,7 +465,15 @@ exports.get = function(props = {}) {
         },
         {type: 'separator'},
         {
-          label: i18n.t('menu.engines', 'Toggle &Analysis'),
+          label: i18n.t(
+            'menu.engines',
+            analysisEngineStatus == 'busy'
+              ? 'Pause &Analysis'
+              : analysisEngineStatus == 'waiting'
+              ? 'Deepen &Analysis'
+              : 'Start &Analysis'
+          ),
+          enabled: !!analysisEngineStatus,
           accelerator: 'F4',
           click: () => {
             let syncerId =
@@ -487,11 +497,7 @@ exports.get = function(props = {}) {
               return
             }
 
-            if (sabaki.state.analyzingEngineSyncerId == null) {
-              sabaki.startAnalysis(syncerId)
-            } else {
-              sabaki.stopAnalysis()
-            }
+            sabaki.togglePauseAnalysis(syncerId)
           }
         },
         {
@@ -678,6 +684,12 @@ exports.get = function(props = {}) {
               }
             }
           ]
+        },
+        {
+          label: i18n.t('menu.view', 'Show &Influence Map'),
+          type: 'checkbox',
+          checked: !!showInfluence,
+          click: () => toggleSetting('board.show_influence')
         },
         {type: 'separator'},
         {
