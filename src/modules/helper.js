@@ -178,3 +178,7 @@ export function getScore(board, areaMap, {komi = 0, handicap = 0} = {}) {
 
   return score
 }
+
+export function preventDefault(evt) {
+  evt.preventDefault()
+}
