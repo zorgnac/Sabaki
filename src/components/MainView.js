@@ -64,6 +64,10 @@ export default class MainView extends Component {
     sabaki.clickVertex(evt.vertex, evt)
   }
 
+  handleContextArm(context) {
+    sabaki.armContext(context)
+  }
+
   handleGobanLineDraw(evt) {
     let {v1, v2} = evt.line
     sabaki.useTool(this.props.selectedTool, v1, v2)
@@ -170,6 +174,7 @@ export default class MainView extends Component {
           transformation: boardTransformation,
 
           onVertexClick: this.handleGobanVertexClick,
+          onVertexArm: this.handleContextArm,
           onLineDraw: this.handleGobanLineDraw
         })
       ),

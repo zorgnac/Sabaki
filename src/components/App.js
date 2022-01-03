@@ -51,10 +51,6 @@ class App extends Component {
   componentDidMount() {
     gtplogger.updatePath()
 
-    window.addEventListener('contextmenu', evt => {
-      evt.preventDefault()
-    })
-
     window.addEventListener('load', () => {
       sabaki.events.emit('ready')
     })
@@ -64,6 +60,10 @@ class App extends Component {
         () => sabaki.loadFile(...args),
         setting.get('app.loadgame_delay')
       )
+    })
+
+    sabaki.window.webContents.on('context-menu', (evt, props) => {
+      sabaki.openContextMenu(evt, props)
     })
 
     sabaki.window.on('focus', () => {
@@ -366,6 +366,25 @@ class App extends Component {
         engineGameOngoing: state.engineGameOngoing,
         analysisEngineStatus: inferredState.analysisEngineStatus
       }),
+
+      h(
+        'a',
+        {
+          style: {
+            width: '1.25px',
+            height: '1.25px',
+            zIndex: 100,
+            position: 'absolute'
+          },
+          id: 'default-context',
+          class: 'menu'
+        },
+        h('img', {
+          src: './void.svg',
+          height: 10,
+          width: 10
+        })
+      ),
 
       h(TripleSplitContainer, {
         id: 'mainlayout',

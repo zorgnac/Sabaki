@@ -61,6 +61,10 @@ export default class LeftSidebar extends Component {
         syncer.queueCommand(command)
       }
     }
+
+    this.handleContextMenu = evt => {
+      evt.preventDefault()
+    }
   }
 
   shouldComponentUpdate(nextProps) {
@@ -86,7 +90,8 @@ export default class LeftSidebar extends Component {
       'section',
       {
         ref: el => (this.element = el),
-        id: 'leftsidebar'
+        id: 'leftsidebar',
+        onContextMenu: this.handleContextMenu
       },
 
       h(SplitContainer, {

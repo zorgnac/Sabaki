@@ -154,6 +154,7 @@ export class EnginePeerList extends Component {
     }
 
     this.handleEngineContextMenu = (evt, {syncer}) => {
+      evt.preventDefault()
       let {onEngineSelect = () => {}} = this.props
       onEngineSelect({syncer})
 

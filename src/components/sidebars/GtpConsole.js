@@ -227,6 +227,7 @@ export default class GtpConsole extends Component {
     this.scrollToBottom = true
 
     this.handleContextMenu = evt => {
+      evt.preventDefault()
       let t = i18n.context('menu.engines')
 
       popupMenu(
@@ -275,14 +276,16 @@ export default class GtpConsole extends Component {
   render({consoleLog, attachedEngine}) {
     return h(
       'section',
-      {class: 'gtp-console'},
+      {
+        class: 'gtp-console',
+        onContextMenu: this.handleContextMenu
+      },
 
       h(
         'ol',
         {
           ref: el => (this.scrollElement = el),
-          class: 'log',
-          onContextMenu: this.handleContextMenu
+          class: 'log'
         },
 
         consoleLog.map(({name, command, response, waiting}, i) => {
