@@ -226,6 +226,7 @@ class Sabaki extends EventEmitter {
       'board.analysis_type': 'analysisType',
       'board.show_analysis': 'showAnalysis',
       'board.show_influence': 'showInfluence',
+      'edit.tool': 'selectedTool',
       'view.show_menubar': 'showMenuBar',
       'view.show_coordinates': 'showCoordinates',
       'view.show_move_colorization': 'showMoveColorization',
