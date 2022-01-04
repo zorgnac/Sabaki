@@ -1,18 +1,14 @@
-
 # Cheat sheet around npm
 
-.PHONY	: 1 all
+.PHONY	: 1 all help
 
-CAPP	= $(shell bash -c "type -p capp")
-GRIP	= $(shell bash -c "type -p grip")
+GRIP.sh	= $(shell bash -c "type -p grip")
 
 -include user.mk
 user.mk	:
 	@echo "all	: help" > $@
 
-ifneq (${CAPP},)
-include $(shell capp include help var)
-else
+ifeq (${CAPP.sh},)
 #no-capp: dump usage information
 help	:
 	@awk -v FS='	' \
@@ -20,6 +16,7 @@ help	:
 	M {print $$1 M; M=""}' ${MAKEFILE_LIST}
 endif
 
+.PHONY	: required watch run linux
 #: install required modules
 required	:
 	npm install
@@ -38,14 +35,14 @@ linux	: 1
 	npm run dist:linux
 
 .PHONY	: README CHANGELOG
-ifneq (${GRIP},)
+ifneq (${GRIP.sh},)
 #: view README
 README	:
-	grip -b README.md
+	${GRIP.sh} -b README.md
 
 #: view CHANGELOG
 CHANGELOG	:
-	grip -b CHANGELOG.md
+	${GRIP.sh} -b CHANGELOG.md
 else
 README	\
 CHANGELOG	\
