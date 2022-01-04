@@ -858,6 +858,24 @@ class Sabaki extends EventEmitter {
     }
   }
 
+  clickToolButton(evt) {
+    //     console.log(evt)
+    if (evt.ctrlKey) {
+      let symbol = {
+        triangle: '△',
+        square: '▢',
+        cross: '╳',
+        circle: '◯'
+      }
+      let contents = this.window.webContents
+      let tool = symbol[evt.tool]
+      if (!tool) tool = evt.tool
+      contents.insertText(tool)
+    } else {
+      this.setState({selectedTool: evt.tool}) // TODO: does not update settings
+    }
+  }
+
   clickVertex(vertex, {ctrlKey = false, x = 0, y = 0} = {}) {
     let {v, vx, vy, t, tree, board, node, treePosition} = this.onVertex(vertex)
     vertex = v
