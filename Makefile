@@ -2,17 +2,24 @@
 
 .PHONY	: 1 all help
 
-GRIP.sh	= $(shell bash -c "type -p grip")
+help	:
 
+# Developper's own makefile (list it in .git/info/exclude)
+user.mk	:;
 -include user.mk
-user.mk	:
-	@echo "all	: help" > $@
 
-ifeq (${CAPP.sh},)
-#no-capp: dump usage information
+# Viewer for *.md
+# MD.bin        ?= xdg-open
+# MD.opt        ?= 
+MD.bin	?= $(shell which grip)
+MD.opt	?= -b
+
+
+ifeq (${HAS.help},)
+#help: dump usage information
 help	:
 	@awk -v FS='	' \
-	'/^#(no-capp)?:/ { gsub(/^#(no-capp)?: */, "	"); M=M "\n" $$0; next } \
+	'/^#(help)?:/ { gsub(/^#(help)?: */, "	"); M=M "\n" $$0; next } \
 	M {print $$1 M; M=""}' ${MAKEFILE_LIST}
 endif
 
@@ -35,14 +42,15 @@ linux	: 1
 	npm run dist:linux
 
 .PHONY	: README CHANGELOG
-ifneq (${GRIP.sh},)
+ifneq (${MD.bin},)
+MD	= ${MD.bin} ${MD.opt}
 #: view README
 README	:
-	${GRIP.sh} -b README.md
+	${MD} README.md
 
 #: view CHANGELOG
 CHANGELOG	:
-	${GRIP.sh} -b CHANGELOG.md
+	${MD} CHANGELOG.md
 else
 README	\
 CHANGELOG	\

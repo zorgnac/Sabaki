@@ -7,7 +7,5 @@ bundle.js
 bundle.js.map
 package-lock.json
 
-user.mk
-
 *.pdn
 *.vbs
