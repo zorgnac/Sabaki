@@ -872,6 +872,7 @@ class Sabaki extends EventEmitter {
       if (!tool) tool = evt.tool
       contents.insertText(tool)
     } else {
+      this.setState({selectedTool: evt.tool})
     }
   }
 
@@ -1839,15 +1840,17 @@ class Sabaki extends EventEmitter {
         })
       })
 
-      syncer.on('commands', () => {
-        let role = engine.boot.filter(x =>
-          x.match(/^(analyze|black|white)$/) ? x : null
-        )[0]
-        if (role == 'analyze') {
-          this.startAnalysis(syncer.id)
-        } else if (role == 'white' || role == 'black') {
-          this.toggleEnginePlayer(syncer.id, role)
-        }
+      syncer.on('engine-ready', id => {
+        engine.boot
+          .filter(x => (x.match(/^(analyze|black|white)$/) ? x : null))
+          .map(role => {
+            if (role == 'analyze') {
+              this.startAnalysis(syncer.id)
+            } else if (role == 'white' || role == 'black') {
+              this.toggleEnginePlayer(syncer.id, role)
+            }
+          })
+        this.setState({lastEngineReadyId: id})
       })
 
       syncer.controller.start()
