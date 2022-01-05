@@ -860,7 +860,6 @@ class Sabaki extends EventEmitter {
   }
 
   clickToolButton(evt) {
-    //     console.log(evt)
     if (evt.ctrlKey) {
       let symbol = {
         triangle: '△',
@@ -873,7 +872,6 @@ class Sabaki extends EventEmitter {
       if (!tool) tool = evt.tool
       contents.insertText(tool)
     } else {
-      this.setState({selectedTool: evt.tool}) // TODO: does not update settings
     }
   }
 
