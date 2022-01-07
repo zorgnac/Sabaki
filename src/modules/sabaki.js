@@ -226,7 +226,6 @@ class Sabaki extends EventEmitter {
       'board.analysis_type': 'analysisType',
       'board.show_analysis': 'showAnalysis',
       'board.show_influence': 'showInfluence',
-      'edit.tool': 'selectedTool',
       'view.show_menubar': 'showMenuBar',
       'view.show_coordinates': 'showCoordinates',
       'view.show_move_colorization': 'showMoveColorization',
@@ -239,7 +238,8 @@ class Sabaki extends EventEmitter {
       'graph.grid_size': 'graphGridSize',
       'graph.node_size': 'graphNodeSize',
       'engines.list': 'engines',
-      'scoring.method': 'scoringMethod'
+      'scoring.method': 'scoringMethod',
+      'edit.tool': 'selectedTool'
     }
 
     if (key == null) {
@@ -282,13 +282,23 @@ class Sabaki extends EventEmitter {
       this.waitForRender().then(() => {
         let textarea = document.querySelector('#properties .edit textarea')
 
-        textarea.selectionStart = textarea.selectionEnd = textarea.value.length
         textarea.focus()
       })
     }
 
     this.setState(stateChange)
     this.events.emit('modeChange')
+  }
+
+  dispatchFocus() {
+    let mode = this.state.mode
+    if (mode === 'edit') {
+      this.waitForRender().then(() => {
+        let textarea = document.querySelector('#properties .edit textarea')
+
+        textarea.focus()
+      })
+    }
   }
 
   openDrawer(drawer) {
@@ -859,24 +869,7 @@ class Sabaki extends EventEmitter {
     }
   }
 
-  clickToolButton(evt) {
-    if (evt.ctrlKey) {
-      let symbol = {
-        triangle: '△',
-        square: '▢',
-        cross: '╳',
-        circle: '◯'
-      }
-      let contents = this.window.webContents
-      let tool = symbol[evt.tool]
-      if (!tool) tool = evt.tool
-      contents.insertText(tool)
-    } else {
-      this.setState({selectedTool: evt.tool})
-    }
-  }
-
-  clickVertex(vertex, {ctrlKey = false, x = 0, y = 0} = {}) {
+  clickVertex(vertex, {ctrlKey = false, shiftKey = false, x = 0, y = 0} = {}) {
     let {v, vx, vy, t, tree, board, node, treePosition} = this.onVertex(vertex)
     vertex = v
 
@@ -893,12 +886,11 @@ class Sabaki extends EventEmitter {
         this.removeNode(treePosition)
       }
     } else if (this.state.mode === 'edit') {
-      if (ctrlKey) {
+      if (ctrlKey && !shiftKey) {
         // Add coordinates to comment
 
         let coord = board.stringifyVertex(vertex)
         let contents = this.window.webContents
-        // https://www.electronjs.org/docs/latest/api/web-contents
         contents.insertText(coord)
 
         return
@@ -917,10 +909,13 @@ class Sabaki extends EventEmitter {
           this.editVertexData = null
         }
       } else {
-        this.useTool(tool, vertex)
+        if (shiftKey) this.useAlternateTool(tool, vertex, ctrlKey)
+        else this.useTool(tool, vertex)
         this.editVertexData = null
       }
     } else if (['scoring', 'estimator'].includes(this.state.mode)) {
+      if (button !== 0 || board.get(vertex) === 0) return
+
       let {mode, deadStones} = this.state
       let dead = deadStones.some(v => helper.vertexEquals(v, vertex))
       let stones =
@@ -999,98 +994,185 @@ class Sabaki extends EventEmitter {
     this.events.emit('vertexClick')
   }
 
+  useAlternateTool(tool, vertex, toggle) {
+    // Switch if stone tool
+
+    if (tool === 'stone_1') tool = 'stone_-1'
+    else if (tool === 'stone_-1') tool = 'stone_1'
+
+    this.useTool(tool, vertex)
+
+    if (toggle) this.setState({selectedTool: tool})
+  }
+
+  getStoneToolMenu(vertex) {
+    let tool = this.state.selectedTool
+    let alt
+    let t = i18n.context('menu.edit')
+
+    if (tool === 'stone_1') alt = 'stone_-1'
+    else if (tool === 'stone_-1') alt = 'stone_1'
+
+    if (!alt) return
+
+    let color = {
+      'stone_-1': t('White'),
+      stone_1: t('Black')
+    }
+    let filter = string =>
+      string.replace(/{Alt}/, color[alt]).replace(/{Tool}/, color[tool])
+
+    let template = [
+      {
+        label: filter(t('Toggle {Alt}')),
+        tooltip: 'Shift+Click',
+        click: () => (
+          this.useAlternateTool(tool, vertex), (this.editVertexData = null)
+        )
+      },
+      {
+        label: filter(t('Toggle {Tool}')),
+        tooltip: 'Click',
+        click: () => (this.useTool(tool, vertex), (this.editVertexData = null))
+      },
+      {
+        type: 'separator'
+      },
+      {
+        label: filter(t('Toggle {Alt} and Update Stone Tool')),
+        tooltip: 'Ctrl+Shift+Click',
+        click: () => (
+          this.useAlternateTool(tool, vertex, 'toggle'),
+          (this.editVertexData = null)
+        )
+      }
+    ]
+
+    return template
+  }
+
+  openStoneToolMenu(vertex, {x, y} = {}) {
+    let template = this.getStoneToolMenu(vertex)
+    helper.popupMenu(template, x, y)
+  }
+
+  getLabelToolMenu(vertex) {
+    let template = [
+      {
+        label: t('&Edit Label'),
+        click: async () => {
+          let value = await dialog.showInputBox(t('Enter label text'))
+          if (value == null) return
+
+          this.useTool('label', vertex, value)
+        }
+      }
+    ]
+    return template
+  }
+
+  getAnalysisMenu(vertex) {
+    let template = []
+
+    let {sign, variations} = this.state.analysis
+    let variation = variations.find(x => helper.vertexEquals(x.vertex, vertex))
+
+    if (variation != null) {
+      let maxVisitsWin = Math.max(...variations.map(x => x.visits * x.winrate))
+      let strength =
+        Math.round((variation.visits * variation.winrate * 8) / maxVisitsWin) +
+        1
+      let annotationProp =
+        strength >= 8
+          ? 'TE'
+          : strength >= 5
+          ? 'IT'
+          : strength >= 3
+          ? 'DO'
+          : 'BM'
+      let annotationValues = {BM: '1', DO: '', IT: '', TE: '1'}
+      let winrate =
+        Math.round(
+          (sign > 0 ? variation.winrate : 100 - variation.winrate) * 100
+        ) / 100
+
+      let props = {
+        // TODO: this is unused
+        [annotationProp]: [annotationValues[annotationProp]],
+        SBKV: [winrate.toString()]
+      }
+      template = this.getVariationMenu(sign, variation.moves, props)
+    }
+
+    return template
+  }
+
   openVertexContextMenu(vertex, {x, y} = {}) {
     let {v, vx, vy, t, tree, board, node, treePosition} = this.onVertex(vertex)
     vertex = v
 
-    if (['play', 'autoplay'].includes(this.state.mode)) {
-      if (
-        board.markers[vy][vx] != null &&
-        board.markers[vy][vx].type === 'point'
-      ) {
-        // Show annotation context menu
-
-        this.openCommentMenu(treePosition, {x, y})
-      } else if (
-        this.state.analysis != null &&
-        this.state.analysisTreePosition === this.state.treePosition
-      ) {
-        // Show analysis context menu
-
-        let {sign, variations} = this.state.analysis
-        let variation = variations.find(x =>
-          helper.vertexEquals(x.vertex, vertex)
-        )
-
-        if (variation != null) {
-          let maxVisitsWin = Math.max(
-            ...variations.map(x => x.visits * x.winrate)
-          )
-          let strength =
-            Math.round(
-              (variation.visits * variation.winrate * 8) / maxVisitsWin
-            ) + 1
-          let annotationProp =
-            strength >= 8
-              ? 'TE'
-              : strength >= 5
-              ? 'IT'
-              : strength >= 3
-              ? 'DO'
-              : 'BM'
-          let annotationValues = {BM: '1', DO: '', IT: '', TE: '1'}
-          let winrate =
-            Math.round(
-              (sign > 0 ? variation.winrate : 100 - variation.winrate) * 100
-            ) / 100
-
-          this.openVariationMenu(sign, variation.moves, {
-            x,
-            y,
-            startNodeProperties: {
-              [annotationProp]: [annotationValues[annotationProp]],
-              SBKV: [winrate.toString()]
-            }
-          })
-        }
-      }
-    } else if (this.state.mode === 'edit') {
-      let tool = this.state.selectedTool
-      // Right mouse click
-
-      if (
-        board.markers[vy][vx] != null &&
-        board.markers[vy][vx].type === 'point'
-      ) {
-        // Show annotation context menu
-        this.openCommentMenu(treePosition, {x, y})
-      } else if (['stone_1', 'stone_-1'].includes(tool)) {
-        // Switch stone tool
-
-        tool = tool === 'stone_1' ? 'stone_-1' : 'stone_1'
-        this.useTool(tool, vertex)
-      } else if (['number', 'label'].includes(tool)) {
-        // Show label editing context menu
-
-        helper.popupMenu(
-          [
-            {
-              label: t('&Edit Label'),
-              click: async () => {
-                let value = await dialog.showInputBox(t('Enter label text'))
-                if (value == null) return
-
-                this.useTool('label', vertex, value)
-              }
-            }
-          ],
-          x,
-          y
-        )
+    let template = []
+    if (
+      this.state.analysis != null &&
+      this.state.analysisTreePosition === this.state.treePosition
+    ) {
+      // Show analysis context menu
+      let sub = this.getAnalysisMenu(vertex)
+      if (sub) {
+        template = [...template, {type: 'separator'}, ...sub]
       }
     }
 
-    //     this.events.emit('vertexClick')
+    if (
+      board.markers[vy][vx] != null &&
+      board.markers[vy][vx].type === 'point'
+    ) {
+      // Get annotation context menu
+      template = [
+        ...template,
+        {type: 'separator'},
+        ...this.getCommentMenu(treePosition)
+      ]
+    }
+
+    if (this.state.mode === 'edit') {
+      let tool = this.state.selectedTool
+
+      if (['stone_1', 'stone_-1'].includes(tool)) {
+        template = [
+          ...template,
+          {type: 'separator'},
+          ...this.getStoneToolMenu(vertex, {x, y})
+        ]
+      } else if (['number', 'label'].includes(tool)) {
+        // Add label editing context menu
+        template = [
+          ...template,
+          {type: 'separator'},
+          ...this.getLabelToolMenu(vertex)
+        ]
+      }
+    }
+
+    if (template.length) helper.popupMenu(template, x, y)
+  }
+
+  clickToolButton(evt) {
+    if (evt.ctrlKey) {
+      let symbol = {
+        triangle: '△',
+        square: '▢',
+        cross: '╳',
+        circle: '◯'
+      }
+      let contents = this.window.webContents
+      let tool = symbol[evt.tool]
+      if (!tool) tool = evt.tool
+      contents.insertText(tool)
+    } else {
+      this.setState({selectedTool: evt.tool})
+    }
+    this.dispatchFocus()
   }
 
   makeMove(vertex, {player = null, generateEngineMove = false} = {}) {
@@ -1431,9 +1513,7 @@ class Sabaki extends EventEmitter {
     this.setCurrentTreePosition(newTree, node.id)
 
     this.events.emit('toolUse', {tool, vertex, argument})
-
-    let textarea = document.querySelector('#properties .edit textarea')
-    textarea.focus()
+    this.dispatchFocus()
   }
 
   // Navigation
@@ -2733,7 +2813,7 @@ class Sabaki extends EventEmitter {
     helper.popupMenu(template, x, y)
   }
 
-  openCommentMenu(treePosition, {x, y} = {}) {
+  getCommentMenu(treePosition) {
     let t = i18n.context('menu.comment')
     let node = this.inferredState.gameTree.get(treePosition)
 
@@ -2817,10 +2897,15 @@ class Sabaki extends EventEmitter {
       item.click = () => this.setComment(treePosition, item.data)
     }
 
+    return template
+  }
+  openCommentMenu(treePosition, {x, y} = {}) {
+    let template = this.getCommentMenu(treePosition)
+
     helper.popupMenu(template, x, y)
   }
 
-  openVariationMenu(
+  getVariationMenu(
     sign,
     moves,
     {x, y, appendSibling = false, startNodeProperties = {}} = {}
@@ -2828,9 +2913,8 @@ class Sabaki extends EventEmitter {
     let t = i18n.context('menu.variation')
     let {treePosition} = this.state
     let tree = this.inferredState.gameTree
-
-    helper.popupMenu(
-      [
+    {
+      let template = [
         {
           label: t('&Add Variation'),
           click: () => {
@@ -2869,10 +2953,23 @@ class Sabaki extends EventEmitter {
             this.setCurrentTreePosition(newTree, treePosition)
           }
         }
-      ],
-      x,
-      y
-    )
+      ]
+
+      return template
+    }
+  }
+
+  openVariationMenu(
+    sign,
+    moves,
+    {x, y, appendSibling = false, startNodeProperties = {}} = {}
+  ) {
+    let template = this.getVariationMenu(sign, move, {
+      appendSibling,
+      startNodeProperties
+    })
+
+    helper.popupMenu(template, x, y)
   }
 
   openEnginesMenu({x, y} = {}) {
@@ -3102,15 +3199,6 @@ class Sabaki extends EventEmitter {
     )
   }
   openContextMenu(evt, props) {
-    if (this.context) {
-      let {name, vertex, treePosition, x, y, id} = this.context
-      let undef
-      this.context = undef
-
-      if (name == 'vertex') this.openVertexContextMenu(vertex)
-
-      return
-    }
     if (this.state.mode == 'edit') {
       let word = props.misspelledWord
 
@@ -3126,9 +3214,6 @@ class Sabaki extends EventEmitter {
     }
 
     this.openPlayMenu()
-  }
-  armContext(context) {
-    this.context = context
   }
 }
 

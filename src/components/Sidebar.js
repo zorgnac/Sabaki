@@ -23,12 +23,11 @@ export default class Sidebar extends Component {
       sidebarSplit: setting.get('view.properties_height')
     }
 
-    this.handleGraphNodeClick = ({gameTree, treePosition, x, y}) => {
+    this.handleGraphNodeClick = ({gameTree, treePosition}) => {
       sabaki.setCurrentTreePosition(gameTree, treePosition)
     }
-    this.handleGraphNodeContextMenu = ({evt, gameTree, treePosition, x, y}) => {
-      evt.preventDefault()
-      sabaki.openNodeMenu(treePosition)
+    this.handleGraphNodeContextMenu = ({treePosition, x, y}) => {
+      sabaki.openNodeMenu(treePosition, {x, y})
     }
 
     this.handleSliderChange = ({percent}) => {

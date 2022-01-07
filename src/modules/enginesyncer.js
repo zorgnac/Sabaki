@@ -173,18 +173,16 @@ export default class EngineSyncer extends EventEmitter {
               this.probes[this.treePosition] = probes
 
               this.analysis = {
-                // emits 'analysis-update' via setter
                 sign,
                 variations,
                 winrate: Math.max(...variations.map(({winrate}) => winrate)),
-                ownership: ownership,
                 probes: probes,
-                syncing: syncing
+                syncing: syncing,
+                ownership: ownership
               }
             } else if (line.startsWith('play ')) {
               sign = -sign
 
-              this.analysis = null
               this.treePosition = null
             }
           })
@@ -199,7 +197,6 @@ export default class EngineSyncer extends EventEmitter {
 
           if (!equals(prevHistory, this.stateTracker.state.history)) {
             this.treePosition = null
-            this.analysis = null
           }
         }
       }
@@ -442,7 +439,6 @@ export default class EngineSyncer extends EventEmitter {
 
     if (this.treePosition != id) {
       this.treePosition = id
-      this.analysis = null
       this.syncing = true
     }
   }

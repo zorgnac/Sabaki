@@ -518,6 +518,7 @@ exports.get = function(props = {}) {
         },
         {type: 'separator'},
         {
+          shortcut: 'analysis',
           label: i18n.t(
             'menu.engines',
             analysisEngineStatus == 'busy'

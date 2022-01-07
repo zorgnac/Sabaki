@@ -9,9 +9,7 @@ All notable changes to this project will be documented in this file.
 - Fix vertex coordinates insertion in edit (`Ctrl+Click`)
   ([#838](https://github.com/SabakiHQ/Sabaki/issues/838))
 
-- Revise context menu triggering (needed by spelling below)
-
-- Move cursor to the end of comment when entering edit mode
+- Keep focus in textarea when using edit tools
 
 **Added**
 
@@ -21,8 +19,6 @@ All notable changes to this project will be documented in this file.
 
   - Minimal language support via settings
     ([#832](https://github.com/SabakiHQ/Sabaki/issues/832))
-  - `Custom Dictionary` contains an excerpt from
-    [Sensei's](https://senseis.xmp.net/?GoTerms) library Romaji go terms
   - Spelling context menu with addition to Custom Dictionary
 
   - Configure default edit tool via settings
@@ -52,6 +48,10 @@ All notable changes to this project will be documented in this file.
 
 - "Navigate>Go to Main Variation" now works again
   ([#801](https://github.com/SabakiHQ/Sabaki/issues/801))
+
+**Changed**
+
+- Revise vertex context menu (reference needed)
 
 ## [Sabaki v0.52.0][v0.52.0] (2021-07-05)
 

@@ -51,6 +51,10 @@ class App extends Component {
   componentDidMount() {
     gtplogger.updatePath()
 
+    window.addEventListener('contextmenu', evt => {
+      evt.preventDefault()
+    })
+
     window.addEventListener('load', () => {
       sabaki.events.emit('ready')
     })
@@ -293,6 +297,10 @@ class App extends Component {
       .set('view.leftsidebar_width', this.state.leftSidebarWidth)
   }
 
+  handleContextMenu(evt) {
+    evt.stopPropagation()
+  }
+
   // Render
 
   render(_, state) {
@@ -320,6 +328,7 @@ class App extends Component {
       // Calculate area map
 
       scoreBoard = gametree.getBoard(tree, state.treePosition).clone()
+
       for (let vertex of state.deadStones) {
         let sign = scoreBoard.get(vertex)
         if (sign === 0) continue
@@ -377,10 +386,11 @@ class App extends Component {
             position: 'absolute'
           },
           id: 'default-context',
+          onContextMenu: this.handleContextMenu,
           class: 'menu'
         },
         h('img', {
-          src: './void.svg',
+          src: './img/ui/void.svg',
           height: 10,
           width: 10
         })

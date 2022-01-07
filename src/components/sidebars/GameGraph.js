@@ -303,11 +303,6 @@ class GameGraph extends Component {
   }
 
   handleNodeContextMenu(evt) {
-    if (this.drag) {
-      this.drag = false
-      return
-    }
-
     let treePosition = this.getTreePosition(evt)
     if (!treePosition) return
 

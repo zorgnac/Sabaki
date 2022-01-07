@@ -113,8 +113,9 @@ export default class Goban extends Component {
 
   handleVertexMouseDown(evt, vertex) {
     if (evt.button == 2) {
-      let {onVertexArm = helper.noop} = this.props
-      onVertexArm({name: 'vertex', evt, vertex})
+      // assume context menu
+      let {onVertexContextMenu = helper.noop} = this.props
+      onVertexContextMenu(vertex, evt)
       return
     }
 

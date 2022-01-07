@@ -28,7 +28,7 @@ export default class PlayBar extends Component {
 
     this.handleMenuClick = () => {
       let {left, top} = this.menuButtonElement.getBoundingClientRect()
-      sabaki.openPlayMenu(left, top)
+      sabaki.openPlayMenu({left, top})
     }
 
     for (let syncer of this.props.engineSyncers) {
