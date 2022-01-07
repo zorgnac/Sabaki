@@ -129,11 +129,7 @@ export default class GameChooserDrawer extends Component {
       this.setState({scrollTop: evt.currentTarget.scrollTop})
     }
 
-    this.handleContextMenu = evt => {
-      evt.preventDefault()
-    }
     this.handleItemContextMenu = evt => {
-      evt.preventDefault()
       helper.popupMenu(
         [
           {
@@ -443,7 +439,7 @@ export default class GameChooserDrawer extends Component {
 
     return h(
       'div',
-      {onDrop: this.handleCancelDrag, onContextMenu: this.handleContextMenu},
+      {onDrop: this.handleCancelDrag},
       h(
         'style',
         {},

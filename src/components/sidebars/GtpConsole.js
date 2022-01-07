@@ -227,7 +227,6 @@ export default class GtpConsole extends Component {
     this.scrollToBottom = true
 
     this.handleContextMenu = evt => {
-      evt.preventDefault()
       let t = i18n.context('menu.engines')
 
       popupMenu(

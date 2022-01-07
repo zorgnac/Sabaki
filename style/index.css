@@ -1367,10 +1367,6 @@ header {
   .engine-peer-list .item .icon.inactive {
       opacity: .3;
   }
-  .engine-peer-list .item .icon.inactive {
-    opacity: .3;
-/* display: none; */
-  }
   .engine-peer-list .item .text-spinner {
     width: 1.5em;
     text-align: center;
